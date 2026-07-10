@@ -1,0 +1,132 @@
+{
+	"alias": "Svelte Eagle Eye",
+	"author": "Stephen Isienyi <stephen.isienyi@webkrafting.com>",
+	"bugs": {
+		"url": "https://github.com/webKrafters/svelte-eagleeye.js/issues"
+	},
+	"contributors": [
+		"steveswork <stephen.isienyi@gmail.com> (https://github.com/steveswork)"
+	],
+	"dependencies": {
+		"@webkrafters/eagleeye": "^1.0.8"
+	},
+	"description": "Svelte Eagle Eye - Reactive Streamable Observable Auto-Immutable Update-friendly State Management System for Svelte 5+. Maintaining application wide state made easy.",
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"@sveltejs/adapter-node": "^5.5.7",
+		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/package": "^2.5.8",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@types/lodash.isempty": "^4.4.9",
+		"@types/node": "^20",
+		"@vitest/browser-playwright": "^4.1.8",
+		"@webkrafters/clone-total": "^1.0.1",
+		"@webkrafters/get-property": "^2.0.0",
+		"@webkrafters/path-dotize": "0.0.2",
+		"@webkrafters/timed-map": "^2.0.0",
+		"eslint-plugin-svelte": "^3.19.0",
+		"globals": "^17.6.0",
+		"lodash.clonedeep": "^4.5.0",
+		"lodash.clonedeepwith": "^4.5.0",
+		"lodash.isboolean": "^3.0.3",
+		"lodash.isempty": "^4.4.0",
+		"lodash.isequal": "^4.5.0",
+		"lodash.isinteger": "^4.0.4",
+		"lodash.isobject": "^3.0.2",
+		"lodash.isplainobject": "^4.0.6",
+		"lodash.omit": "^4.5.0",
+		"npm": "^4.0.6",
+		"playwright": "^1.60.0",
+		"publint": "^0.3.21",
+		"setimmediate": "^1.0.5",
+		"svelte": "^5.56.1",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.0.16",
+		"vitest": "^4.1.8",
+		"vitest-browser-svelte": "^2.1.1"
+	},
+	"exports": {
+		".": {
+			"default": "./dist/index.js",
+			"svelte": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"!dist/test-artifacts",
+		"!dist/vitest-examples",
+		"!dist/**/*.test.*",
+		"!dist/**/*.spec.*",
+		"logo.png"
+	],
+	"homepage": "https://svelte-eagleeye.js.org",
+	"keywords": [
+		"connect",
+		"context",
+		"eagle eye",
+		"svelte eagle eye",
+		"eagleeye",
+		"svelte-eagleeye",
+		"hoc",
+		"hooks",
+		"observable",
+		"observable context",
+		"svelte",
+		"svelte context",
+		"svelte observable conttext",
+		"svelte state",
+		"state",
+		"state management",
+		"state manager",
+		"useContext",
+		"useStream",
+		"stream",
+		"change stream"
+	],
+	"license": "GPL-3.0-only",
+	"name": "@webkrafters/svelte-eagleeye",
+	"peerDependencies": {
+		"@sveltejs/kit": ">= 2.63.0",
+		"@webkrafters/clone-total": ">= 1.0.1",
+		"@webkrafters/get-property": ">= 1.0.1",
+		"@webkrafters/path-dotize": ">= 0.0.2",
+		"@webkrafters/timed-map": "^2.0.0",
+		"lodash.clonedeep": ">= 0.1.0",
+		"lodash.clonedeepwith": ">= 0.1.0",
+		"lodash.isboolean": ">= 0.1.0",
+		"lodash.isempty": ">= 0.1.0",
+		"lodash.isequal": ">= 0.1.0",
+		"lodash.isinteger": ">= 0.1.0",
+		"lodash.isobject": ">= 0.1.0",
+		"lodash.isplainobject": ">= 0.8.0",
+		"lodash.omit": ">= 0.1.0",
+		"svelte": ">= 5.56.1"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/webKrafters/svelte-eagleeye.js.git"
+	},
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync && echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "eslint .",
+		"test:unit": "vitest",
+		"test": "npm run test:unit -- --run"
+	},https://github.com/webKrafters/svelte-eagleeye.js.git
+	"sideEffects": [
+		"**/*.css"
+	],
+	"svelte": "./dist/index.js",
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"version": "1.0.0-alpha.0"
+}
