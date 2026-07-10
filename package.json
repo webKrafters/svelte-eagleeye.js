@@ -121,7 +121,7 @@
 		"lint": "eslint .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run"
-	},https://github.com/webKrafters/svelte-eagleeye.js.git
+	},
 	"sideEffects": [
 		"**/*.css"
 	],
