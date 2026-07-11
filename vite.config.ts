@@ -18,6 +18,16 @@ export default defineConfig({
 		})
 	],
 	test: {
+		coverage: {
+			provider: 'v8', // or 'istanbul'
+			reporter: ['text', 'json', 'html'],
+			include: [
+				'src/lib/index.{svelte}.{test,spec}.{js,ts}',
+				'src/lib/main/*.svelte.{test,spec}.{js,ts}'
+
+				// 'src/**/*.{ts,tsx,js,jsx}'
+			], // Adjust to your source directory
+		},
 		expect: { requireAssertions: true },
 		projects: [
 			{
@@ -33,7 +43,6 @@ export default defineConfig({
 					exclude: ['src/lib/server/**']
 				}
 			},
-
 			{
 				extends: './vite.config.ts',
 				test: {
