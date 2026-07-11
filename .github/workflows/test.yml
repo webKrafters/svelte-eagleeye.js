@@ -29,6 +29,8 @@ jobs:
       - run: npm cache clean --force
       - run: npm install --legacy-peer-deps
       
+      - run: npm run pw:install
+      
       - run: npm run test
 
       - uses: coverallsapp/github-action@master
