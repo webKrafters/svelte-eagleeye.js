@@ -27,6 +27,7 @@ export default defineConfig({
 			],
 			provider: 'v8', // or 'istanbul'
 			reporter: ['text', 'json', 'html'],
+			reportOnFailure: true, 
 			reportsDirectory: './coverage' // Adjust to your source directory
 		},
 		expect: { requireAssertions: true },
