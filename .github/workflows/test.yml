@@ -31,7 +31,7 @@ jobs:
       
       - run: npm run pw:install
       
-      - run: npm run test && cat ./coverage/lcov.info | coveralls
+      - run: npm run test
 
       - uses: coverallsapp/github-action@master
         with:
