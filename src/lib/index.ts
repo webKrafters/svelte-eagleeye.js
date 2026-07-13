@@ -73,8 +73,8 @@ export type {
     State
 };
 
-export { SvelteEagleEye as EagleEyeContext } from './main/base';
-export { BrowserSvelteEagleEye as BrowserContext } from './main/browser';
-export { MemorySvelteEagleEye as ServerSideContext } from './main/memory';
+export { SvelteEagleEye as EagleEyeContext } from './main/base.ts';
+export { BrowserSvelteEagleEye as BrowserContext } from './main/browser.ts';
+export { MemorySvelteEagleEye as ServerSideContext } from './main/memory.ts';
 
-export { createContext as createEagleEye } from './main';
+export { createContext as createEagleEye } from './main/index.ts';

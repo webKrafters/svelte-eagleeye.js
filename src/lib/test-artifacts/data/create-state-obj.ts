@@ -1,6 +1,6 @@
 export type SourceData = typeof sourceData;
 
-import clonedeep from '@webkrafters/clone-total';
+import cloneTotal from '@webkrafters/clone-total';
 
 const sourceData = {
 	_id: '639737cc5ac1df69cda79413',
@@ -88,6 +88,16 @@ const sourceData = {
 	]
 };
 
-const createSourceData = () : SourceData => clonedeep( sourceData );
+// @debug
+const createSourceData = () : SourceData => {
+	try {
+		return cloneTotal.default( sourceData );
+	} catch( e ) {
+		console.info( 'what is clonedeep >>>>> ', cloneTotal.default );
+		console.info( 'exception >>>>> ', e );
+		throw e;
+	}
+}
+// const createSourceData = () : SourceData => clonedeep( sourceData );
 
 export default createSourceData;

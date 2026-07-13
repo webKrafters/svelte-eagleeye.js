@@ -1,6 +1,6 @@
-import type { BaseStream, Changes, Data, SelectorMap, State, Store } from '../..';
+import type { BaseStream, Changes, Data, SelectorMap, State, Store } from '../../index.ts';
 
-import { BaseChannel } from '../..';
+import { BaseChannel } from '../../index.ts';
 
 export abstract class Channel<
 	T extends State, 
@@ -8,10 +8,10 @@ export abstract class Channel<
 > {
 	private _channel : BaseChannel<T, S>;
 	private _data = $state({}) as Data<S, T>;
-	private _selectorMap : S;
+	private _selectorMap = undefined as S;
 	private _store : Store<T, S>;
-	constructor( stream : BaseStream<T>, selectorMap : S ) {
-		this._selectorMap = selectorMap;
+	constructor( stream : BaseStream<T>, selectorMap? : S ) {
+		if( selectorMap ) { this._selectorMap = selectorMap }
 		this._channel = stream( selectorMap ) as BaseChannel<T, S>;
 		this._store = ( $ => {
 			return {

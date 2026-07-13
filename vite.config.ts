@@ -21,9 +21,15 @@ export default defineConfig({
 		coverage: {
 			include: [
 				'src/lib/index.{svelte}.{test,spec}.{js,ts}',
-				'src/lib/main/*.svelte.{test,spec}.{js,ts}'
+				'src/lib/main/**/*.svelte.{test,spec}.{js,ts}',
 
-				// 'src/**/*.{ts,tsx,js,jsx}'
+				'src/**/*.{ts,tsx,js,jsx}'
+			],
+			exclude: [
+				'src/app.d.ts',
+				'src/lib/index.ts',
+				'src/lib/test-artifacts',
+				'src/lib/vitest-examples'
 			],
 			provider: 'v8', // or 'istanbul'
 			reporter: ['text', 'json', 'html'],

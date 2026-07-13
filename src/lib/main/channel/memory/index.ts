@@ -1,4 +1,4 @@
-import type { BaseStream, SelectorMap, State } from '../../..';
+import type { BaseStream, SelectorMap, State } from '../../../index.ts';
 
 import { onMount } from 'svelte';
 
@@ -8,7 +8,7 @@ export class MemoryChannel<
 	T extends State, 
 	const S extends SelectorMap
 > extends Channel<T, S>{
-	constructor( stream : BaseStream<T>, selectorMap : S ) {
+	constructor( stream : BaseStream<T>, selectorMap? : S ) {
 		super( stream, selectorMap );
 		const sync = this.synchronizer;
 		onMount(() => {

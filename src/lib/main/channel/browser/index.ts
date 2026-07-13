@@ -2,7 +2,7 @@ import type {
 	BaseStream,
 	SelectorMap,
 	State
-} from '../../..';
+} from '../../../index.ts';
 
 import { onDestroy, onMount } from 'svelte';
 
@@ -23,7 +23,7 @@ export class BrowserChannel<
 		registry: undefined as unknown as ChannelRegistry<T>
 	};
 	private _navigationDetected = false;
-	constructor( stream : BaseStream<T>, selectorMap : S ) {
+	constructor( stream : BaseStream<T>, selectorMap? : S ) {
 		super( stream, selectorMap );
 		afterNavigate(() => { this._navigationDetected = false });
 		beforeNavigate(() => { this._navigationDetected = true });
