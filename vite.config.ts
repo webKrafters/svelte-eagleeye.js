@@ -32,7 +32,7 @@ export default defineConfig({
 				'src/lib/vitest-examples'
 			],
 			provider: 'v8', // or 'istanbul'
-			reporter: ['text', 'json', 'html'],
+			reporter: ['text', 'json', 'html', 'lcov'],
 			reportOnFailure: true, 
 			reportsDirectory: './coverage' // Adjust to your source directory
 		},
