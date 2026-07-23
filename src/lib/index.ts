@@ -18,6 +18,12 @@ export interface Store<
     set selectorMap( selectorMap : S );
 }
 
+import type {
+    ContextInfra,
+    ProviderProps,
+    RawProviderProps
+} from '@webkrafters/eagleeye';
+
 export type {
     Immutable as AutoImmutable,
     BaseType,
@@ -38,12 +44,14 @@ export type {
 export type {
     ArraySelector,
     Changes,
+    ContextInfra,
     FullStateSelector,
     IStorage,
     Listener,
     ObjectSelector,
     Prehooks,
     ProviderProps,
+    RawProviderProps,
     StoreInternal,
     Store as BaseStore,
     StoreRef,
@@ -73,8 +81,23 @@ export type {
     State
 };
 
-export { SvelteEagleEye as EagleEyeContext } from './main/base.ts';
-export { BrowserSvelteEagleEye as BrowserContext } from './main/browser.ts';
-export { MemorySvelteEagleEye as ServerSideContext } from './main/memory.ts';
+export { SvelteEagleEye } from './main/base.ts';
+export { BrowserSvelteEagleEye } from './main/browser.ts';
+export { MemorySvelteEagleEye } from './main/memory.ts';
 
-export { createContext as createEagleEye } from './main/index.ts';
+export interface Props<T extends State> extends ContextInfra<T> {
+	value? : ( ProviderProps<T>|RawProviderProps<T>)["value"];
+	CTX_DESC : string
+}
+
+export {
+    create as createEagleEye,
+    DESC_EXISTS,
+    discard as discardEagleEye,
+    NO_DESC_ENTRY,
+    NO_EMPTY_DESC,
+    ONLY_STRING_DESC,
+    UNAVAILABLE_DESC,
+    use as useEagleEye,
+    VACATED_DESC,
+} from './main/index.ts';
