@@ -45,7 +45,7 @@ export function create<T extends State>({
 		if( e.message.startsWith( NO_DESC_ENTRY ) ) {
 			return setContext<Entry<T>>( KEY`${ CTX_DESC }`, {
 				hash: hash({ CTX_DESC, prehooks, storage, value }),
-				value: isomorphize<T>( value as T, prehooks, storage )
+				value: isomorphize<T>( CTX_DESC, value as T, prehooks, storage )
 			} ).value;
 		}
 		throw e;
@@ -94,13 +94,14 @@ function hash<T extends State>( value : Props<T> ) {
 }
 
 function isomorphize<T extends State>(
+	ctxDescriptor : string,
 	value? : T | AutoImmutable<T>,
 	prehooks? : Prehooks<T>,
 	storage? : IStorage<T>
 ) : SvelteEagleEye<T> {
 	return browser
-		? new BrowserSvelteEagleEye( value as T, prehooks, storage )
-		: new MemorySvelteEagleEye( value as T, prehooks, storage );
+		? new BrowserSvelteEagleEye( ctxDescriptor, value as T, prehooks, storage )
+		: new MemorySvelteEagleEye( ctxDescriptor, value as T, prehooks, storage );
 }
 
 function isString( value : any ) { return typeof value === 'string' || value instanceof String }

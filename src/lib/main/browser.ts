@@ -1,4 +1,4 @@
-import type { AutoImmutable, IStorage, Prehooks, SelectorMap, State, Store } from '..';
+import type { AutoImmutable, IStorage, Prehooks, SelectorMap, State, Store } from '../index.ts';
 
 import { SvelteEagleEye } from './base.ts';
 import { ChannelRegistry } from './channel/browser/registry/index.ts';
@@ -6,17 +6,19 @@ import { ChannelRegistry } from './channel/browser/registry/index.ts';
 export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 	private _sRegistry : ChannelRegistry<T>;
 	constructor(
+		name : string,
 		value? : T,
 		prehooks? : Prehooks<T>,
 		storage? : IStorage<T>
 	); 
 	constructor(
+		name : string,
 		value? : AutoImmutable<T>,
 		prehooks? : Prehooks<T>,
 		storage? : IStorage<T>
 	);
-	constructor( value : any, prehooks : any, storage : any ) {
-		super( value, prehooks, storage );
+	constructor( name : string, value? : any, prehooks? : any, storage? : any ) {
+		super( name, value, prehooks, storage );
 		this._sRegistry = new ChannelRegistry<T>();
 	}
 	get stream() {

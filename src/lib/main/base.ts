@@ -5,7 +5,7 @@ import type {
 	SelectorMap,
 	Store,
 	State
-} from '..';
+} from '../index.ts';
 
 import {
 	EagleEyeContext,
@@ -15,19 +15,23 @@ import {
 export abstract class SvelteEagleEye<T extends State> {
 
 	private _consumer : EagleEyeContext<T>;
+	private _name : string;
 
 	constructor(
+		name : string,
 		value? : T,
 		prehooks? : Prehooks<T>,
 		storage? : IStorage<T>
 	); 
 	constructor(
+		name : string,
 		value? : AutoImmutable<T>,
 		prehooks? : Prehooks<T>,
 		storage? : IStorage<T>
 	);
-	constructor( value : any, prehooks : any, storage : any ) {
+	constructor( name : any, value? : any, prehooks? : any, storage? : any ) {
 		this._consumer = createEagleEye({ prehooks, storage, value });
+		this._name = name;
 	}
 
 	protected get baseStream() { return this._consumer.stream }
@@ -35,6 +39,8 @@ export abstract class SvelteEagleEye<T extends State> {
 	get cache(){ return this._consumer.cache }
 
 	get closed(){ return this._consumer.closed }
+
+	get name(){ return this._name }
 
 	get prehooks() { return this._consumer.prehooks }
 
