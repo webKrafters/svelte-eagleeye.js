@@ -1,6 +1,9 @@
 import type {
+    ContextInfra,
     Data as BaseData,
     IStore,
+    ProviderProps,
+    RawProviderProps,
     SelectorMap,
     State
 } from '@webkrafters/eagleeye';
@@ -17,12 +20,6 @@ export interface Store<
     get data() : Data<S, T>
     set selectorMap( selectorMap : S );
 }
-
-import type {
-    ContextInfra,
-    ProviderProps,
-    RawProviderProps
-} from '@webkrafters/eagleeye';
 
 export type {
     Immutable as AutoImmutable,
@@ -91,13 +88,15 @@ export interface Props<T extends State> extends ContextInfra<T> {
 }
 
 export {
-    create as createEagleEye,
+    type RequestEvent,
+    default as EagleEyeProvider,
     DESC_EXISTS,
     discard as discardEagleEye,
     NO_DESC_ENTRY,
     NO_EMPTY_DESC,
     ONLY_STRING_DESC,
+    REQUEST_CONTEXT_KEY,
     UNAVAILABLE_DESC,
     use as useEagleEye,
     VACATED_DESC,
-} from './main/index.ts';
+} from './main/index.svelte';

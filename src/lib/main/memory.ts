@@ -1,4 +1,4 @@
-import type { SelectorMap, State } from '..';
+import type { SelectorMap, State } from '../index.ts';
 
 import { MemoryChannel } from './channel/memory/index.ts';
 
