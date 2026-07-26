@@ -82,21 +82,24 @@ export { SvelteEagleEye } from './main/base.ts';
 export { BrowserSvelteEagleEye } from './main/browser.ts';
 export { MemorySvelteEagleEye } from './main/memory.ts';
 
-export interface Props<T extends State> extends ContextInfra<T> {
-	value? : ( ProviderProps<T>|RawProviderProps<T>)["value"];
-	CTX_DESC : string
+export interface IdProps {
+    appInstanceId : string; // an arbitrary unique string id assigned by a server application to an incoming request.
+	CTX_DESC : string;
+}
+
+export interface Props<T extends State> extends ContextInfra<T>, IdProps {
+    value? : ( ProviderProps<T>|RawProviderProps<T>)["value"];
 }
 
 export {
     type RequestEvent,
-    default as EagleEyeProvider,
+    create as createEagleEye,
     DESC_EXISTS,
     discard as discardEagleEye,
     NO_DESC_ENTRY,
     NO_EMPTY_DESC,
-    ONLY_STRING_DESC,
-    REQUEST_CONTEXT_KEY,
+    SSRID_REQ,
     UNAVAILABLE_DESC,
     use as useEagleEye,
     VACATED_DESC,
-} from './main/index.svelte';
+} from './main/index.ts';
