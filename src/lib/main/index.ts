@@ -16,10 +16,6 @@ import { SvelteEagleEye } from './base.ts';
 import { BrowserSvelteEagleEye } from './browser.ts';
 import { MemorySvelteEagleEye } from './memory.ts';
 
-export interface RequestEvent extends SvelteRequestEvent {
-	appInstanceId : string;
-}
-
 interface Entry<T extends State> {
 	hash: string;
 	value: SvelteEagleEye<T>;
