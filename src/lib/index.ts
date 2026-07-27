@@ -78,7 +78,10 @@ export type {
     State
 };
 
-export { SvelteEagleEye } from './main/base.ts';
+export {
+    type ISvelteEagleEye,
+    SvelteEagleEye
+} from './main/base.ts';
 export { BrowserSvelteEagleEye } from './main/browser.ts';
 export { MemorySvelteEagleEye } from './main/memory.ts';
 

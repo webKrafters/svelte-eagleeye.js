@@ -12,7 +12,11 @@ import {
 	createEagleEye
 } from '@webkrafters/eagleeye';
 
-export abstract class SvelteEagleEye<T extends State> {
+export interface ISvelteEagleEye {
+	dispose: () => void;
+}
+
+export abstract class SvelteEagleEye<T extends State> implements ISvelteEagleEye {
 
 	private _consumer : EagleEyeContext<T>;
 	private _name : string;

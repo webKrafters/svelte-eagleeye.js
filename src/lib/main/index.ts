@@ -3,29 +3,56 @@ import type {
 	AutoImmutable,
 	IdProps,
 	IStorage,
+	ISvelteEagleEye,
 	Prehooks,
 	Props,
-	State
+	State,
 } from '../index.ts';
-
-import type { RequestEvent as SvelteRequestEvent } from '@sveltejs/kit';
 
 import { browser } from '$app/environment';
 
-import { SvelteEagleEye } from './base.ts';
-import { BrowserSvelteEagleEye } from './browser.ts';
-import { MemorySvelteEagleEye } from './memory.ts';
+interface AppGroup {
+	liveEntryCount : number;
+	entries : Record<string, Entry<any>>;
+} 
 
 interface Entry<T extends State> {
 	hash: string;
-	value: SvelteEagleEye<T>;
+	value: WeakRef<ISvelteEagleEye>;
+}
+
+interface ContextMetadata<T> {
+	entry : Entry<any>;
+	reachable : boolean;
+	type : string;
+	value? : T;
 }
 
 import stringify from 'safe-stable-stringify';
 import { sha512, type Message } from 'js-sha512';
 
+import {
+	SvelteEagleEye,
+	BrowserSvelteEagleEye,
+	MemorySvelteEagleEye
+} from '../index.ts';
+
+class NullEagleEye implements ISvelteEagleEye {
+	dispose(){}
+}
+
 /** Record<appInstanceId, Record<CTX_KEY, Entry<any>>> */
-const eagleEyeTable : Record<string, Record<string, Entry<any>>> = {};
+const eagleEyeTable : Record<string, AppGroup> = {};
+
+const eagleEyeRegistry = new FinalizationRegistry(( entryId : IdProps ) => {
+	if( !eagleEyeTable[ entryId.appInstanceId ]?.entries?.[ entryId.CTX_DESC ] ) { return }
+	eagleEyeTable[ entryId.appInstanceId ].entries[ entryId.CTX_DESC ] = null as unknown as Entry<any>;
+	eagleEyeTable[ entryId.appInstanceId ].liveEntryCount--;
+	if( eagleEyeTable[ entryId.appInstanceId ].liveEntryCount > 0 ) { return }
+	delete eagleEyeTable[ entryId.appInstanceId ];
+});
+
+const NULL_TYPE = 'NullEagleEye'; // name of the NullEagleEye class above;
 
 export const DESC_EXISTS = 'An EagleEyeContext instance already uses this descriptor';
 export const NO_DESC_ENTRY = 'No entry found using this context instance descriptor';
@@ -40,14 +67,27 @@ export function create<T extends State>( props : Props<T> ) {
 }
 
 export function discard<T extends State>({ CTX_DESC, appInstanceId = '' } : IdProps ) {
-	const entry = getContext<T>( CTX_DESC, appInstanceId );
-	if( !entry ) { return }
-	entry.value.dispose();
+	const { reachable, value } = getContextMeta<T>( CTX_DESC, appInstanceId );
+	if( !reachable ) { return }
+	value!.dispose();
 	unsetContext( CTX_DESC, appInstanceId );
 }
 
-function getContext<T extends State>( CTX_DESC : string, appInstanceId : string ){
-	return eagleEyeTable[ appInstanceId ]?.[ CTX_DESC ] as Entry<T>;
+function getContextMeta<T extends State, V extends any = any>( CTX_DESC : string, appInstanceId : string ) {
+	const entry = eagleEyeTable[ appInstanceId ]?.entries?.[ CTX_DESC ];
+	const value = entry.value?.deref();
+	const retVal = {
+		entry,
+		reachable: false,
+		type: typeof value,
+		value
+	} as ContextMetadata<typeof value>;
+	if( !value ) { return retVal }
+	retVal.type = value.constructor.name;
+	if( retVal.type !== NULL_TYPE ) {
+		retVal.reachable = true;
+	};
+	return retVal;
 }
 
 function hash<T extends State>( value : Props<T> ) {
@@ -78,26 +118,12 @@ function setContext<T extends State>({
 } : Props<T> ) : void {
 	if( !browser && !appInstanceId.length ) { throw new Error( SSRID_REQ ) }
 	if( !CTX_DESC.length ) { throw new Error( NO_EMPTY_DESC ) }
-	const entry = getContext<T>( CTX_DESC, appInstanceId );
-	if( !entry ) {
-		if( entry === null ) {
-			throw new Error( `${ VACATED_DESC }. Received descriptor: \`${ CTX_DESC }\` at appInstance: \`${ appInstanceId }\`.` );
-		}
-		if( !( appInstanceId in eagleEyeTable ) ) {
-			eagleEyeTable[ appInstanceId ] = {};
-		}
-		eagleEyeTable[ appInstanceId ][ CTX_DESC ] = {
-			hash: hash({ appInstanceId, CTX_DESC, ...props }),
-			value: isomorphize<T>(
-				CTX_DESC,
-				props.value as T,
-				props.prehooks,
-				props.storage
-			)
-		};
-		return;
+	const { entry, type, value } = getContextMeta<T>( CTX_DESC, appInstanceId );
+	if( type === NULL_TYPE ) {
+		throw new Error( `${ VACATED_DESC }. Received descriptor: \`${ CTX_DESC }\` at appInstance: \`${ appInstanceId }\`.` );
 	}
-	if( entry.hash !== hash({ appInstanceId, CTX_DESC, ...props }) ) {
+	if( !!value ) {
+		if( entry.hash === hash({ appInstanceId, CTX_DESC, ...props }) ) { return }
 		let atId = '';
 		let callAtId = '';
 		if( appInstanceId.length ) {
@@ -106,13 +132,36 @@ function setContext<T extends State>({
 		}
 		throw new Error( `${ DESC_EXISTS }. Received descriptor: \`${ CTX_DESC }\`${ atId }. May invoke \`use( '${ CTX_DESC }'${ callAtId } )\` to obtain it.` );
 	}
+	if( !( appInstanceId in eagleEyeTable ) ) {
+		eagleEyeTable[ appInstanceId ] = {
+			entries: {},
+			liveEntryCount: 0
+		};
+	}
+	const ctx = isomorphize<T>(
+		CTX_DESC,
+		props.value as T,
+		props.prehooks,
+		props.storage
+	);
+	eagleEyeTable[ appInstanceId ].entries[ CTX_DESC ] = {
+		hash: hash({ appInstanceId, CTX_DESC, ...props }),
+		value: new WeakRef( ctx )
+	};
+	eagleEyeTable[ appInstanceId ].liveEntryCount++;
+	eagleEyeRegistry.register( ctx, { appInstanceId, CTX_DESC }, ctx );
 }
 
 function unsetContext( CTX_DESC : string, appInstanceId : string ){
-	if( !getContext( CTX_DESC, appInstanceId ) ) { return }
-	eagleEyeTable[ appInstanceId ][ CTX_DESC ] = null as unknown as Entry<any>;
+	const { reachable, value } = getContextMeta( CTX_DESC, appInstanceId );
+	if( !reachable ) { return }
+	eagleEyeRegistry.unregister( value! );
+	const nullCtx = new NullEagleEye();
+	eagleEyeTable[ appInstanceId ].entries[ CTX_DESC ].value = new WeakRef( nullCtx );
+	eagleEyeRegistry.register( nullCtx, { appInstanceId, CTX_DESC }, nullCtx );
 }
 
 export function use<T extends State>({ CTX_DESC, appInstanceId = '' } : IdProps ) {
-	return getContext<T>( CTX_DESC, appInstanceId )?.value ?? null;
+	const { reachable, value } = getContextMeta<T>( CTX_DESC, appInstanceId );
+	return reachable ? value : null;
 }
