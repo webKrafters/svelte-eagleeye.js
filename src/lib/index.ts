@@ -92,7 +92,6 @@ export interface Props<T extends State> extends ContextInfra<T>, IdProps {
 }
 
 export {
-    type RequestEvent,
     create as createEagleEye,
     DESC_EXISTS,
     discard as discardEagleEye,
