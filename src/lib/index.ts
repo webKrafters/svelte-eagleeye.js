@@ -85,9 +85,13 @@ export {
 export { BrowserSvelteEagleEye } from './main/browser.ts';
 export { MemorySvelteEagleEye } from './main/memory.ts';
 
+export interface RequestToken {
+	_id: string;
+};
+
 export interface IdProps {
-    appInstanceId : string; // an arbitrary unique string id assigned by a server application to an incoming request.
-	CTX_DESC : string;
+    CTX_DESC : string;
+    requestToken : RequestToken; // holds an arbitrary unique string id assigned by a server application to an incoming request.
 }
 
 export interface Props<T extends State> extends ContextInfra<T>, IdProps {
@@ -100,7 +104,6 @@ export {
     discard as discardEagleEye,
     NO_DESC_ENTRY,
     NO_EMPTY_DESC,
-    SSRID_REQ,
     UNAVAILABLE_DESC,
     use as useEagleEye,
     VACATED_DESC,
