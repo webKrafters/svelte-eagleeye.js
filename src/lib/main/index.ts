@@ -2,7 +2,7 @@
 import type {
 	AutoImmutable,
 	ContextInfo,
-	IdProps,
+	Descriptor,
 	IStorage,
 	ISvelteEagleEye,
 	Prehooks,
@@ -55,14 +55,14 @@ function assertToken( rToken? : RequestToken ) {
 
 export function create<T extends State>( props : Props<T> ) : ContextInfo<T> {
 	setContext( props );
-	const key = { CTX_DESC: props.CTX_DESC } as IdProps;
+	const descriptor = { CTX_DESC: props.CTX_DESC } as Descriptor;
 	if( 'requestToken' in props ) {
-		key.requestToken = props.requestToken;
+		descriptor.requestToken = props.requestToken;
 	}
-	return { key, value: use( props ) as SvelteEagleEye<T> };
+	return { descriptor, value: use( props ) as SvelteEagleEye<T> };
 }
 
-export function discard({ CTX_DESC, requestToken } : IdProps ) {
+export function discard({ CTX_DESC, requestToken } : Descriptor ) {
 	const group = getRequestGroup( requestToken );
 	if( !group ) { return }
 	const entry = group.entries[ CTX_DESC ];4
@@ -144,6 +144,6 @@ function setContext<T extends State>({
 	throw new Error( `${ DESC_EXISTS }. Received descriptor: \`${ CTX_DESC }\`${ atToken }. May invoke \`use( '${ CTX_DESC }'${ callAtToken } )\` to obtain it.` );
 }
 
-export function use({ CTX_DESC, requestToken } : IdProps ) {
+export function use({ CTX_DESC, requestToken } : Descriptor ) {
 	return getRequestGroup( requestToken )?.entries?.[ CTX_DESC ]?.value ?? null
 }

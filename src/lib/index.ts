@@ -91,17 +91,17 @@ export interface RequestToken {
 	_id: string;
 };
 
-export interface IdProps {
+export interface Descriptor {
     CTX_DESC : string;
     requestToken? : RequestToken; // holds an arbitrary unique string id assigned by a server application to an incoming request.
 }
 
-export interface Props<T extends State> extends ContextInfra<T>, IdProps {
+export interface Props<T extends State> extends ContextInfra<T>, Descriptor {
     value? : ( ProviderProps<T>|RawProviderProps<T>)["value"];
 }
 
 export interface ContextInfo<T extends State> {
-    key : IdProps;
+    descriptor : Descriptor;
     value : SvelteEagleEye<T>
 } 
 
