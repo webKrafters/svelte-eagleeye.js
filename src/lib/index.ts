@@ -71,6 +71,8 @@ export {
     Tag
 } from '@webkrafters/eagleeye';
 
+import { SvelteEagleEye } from './main/base.ts';
+
 export type {
     BaseData,
     IStore,
@@ -91,12 +93,17 @@ export interface RequestToken {
 
 export interface IdProps {
     CTX_DESC : string;
-    requestToken : RequestToken; // holds an arbitrary unique string id assigned by a server application to an incoming request.
+    requestToken? : RequestToken; // holds an arbitrary unique string id assigned by a server application to an incoming request.
 }
 
 export interface Props<T extends State> extends ContextInfra<T>, IdProps {
     value? : ( ProviderProps<T>|RawProviderProps<T>)["value"];
 }
+
+export interface ContextInfo<T extends State> {
+    key : IdProps;
+    value : SvelteEagleEye<T>
+} 
 
 export {
     create as createEagleEye,

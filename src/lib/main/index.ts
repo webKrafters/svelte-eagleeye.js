@@ -1,6 +1,7 @@
 
 import type {
 	AutoImmutable,
+	ContextInfo,
 	IdProps,
 	IStorage,
 	ISvelteEagleEye,
@@ -12,16 +13,15 @@ import type {
 
 import { browser } from '$app/environment';
 
-interface RequestGroup {
-	id : string;
-	entries : Record<string, Entry>;
-} 
-
 interface Entry {
 	hash : string;
 	value : null|ISvelteEagleEye;
 }
 
+interface RequestGroup {
+	id : string;
+	entries : Record<string, Entry>;
+}
 
 import stringify from 'safe-stable-stringify';
 import { sha512, type Message } from 'js-sha512';
@@ -53,9 +53,13 @@ function assertToken( rToken? : RequestToken ) {
 	throw new Error( `${ INVALID_TOKEN }. Found \`${ rToken }\`.` );
 }
 
-export function create<T extends State>( props : Props<T> ) {
+export function create<T extends State>( props : Props<T> ) : ContextInfo<T> {
 	setContext( props );
-	return use( props );
+	const key = { CTX_DESC: props.CTX_DESC } as IdProps;
+	if( 'requestToken' in props ) {
+		key.requestToken = props.requestToken;
+	}
+	return { key, value: use( props ) as SvelteEagleEye<T> };
 }
 
 export function discard({ CTX_DESC, requestToken } : IdProps ) {
