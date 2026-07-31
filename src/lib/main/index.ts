@@ -37,11 +37,8 @@ const defaultRequestToken : RequestToken = { _id: crypto.randomUUID() };
 const eagleEyeMap = new WeakMap<RequestToken, RequestGroup>();
 
 export const DESC_EXISTS = 'An EagleEyeContext instance already uses this descriptor';
-export const INVALID_TOKEN = 'Valid `requestToken` property required in parameter per request when in the server.'
-export const NO_DESC_ENTRY = 'No entry found using this context instance descriptor';
-export const NO_EMPTY_DESC = 'An EagleEyeContext instance descriptor cannot be empty';
-export const NO_REQUEST_MUTATION = 'Request Token _id does not match found context. Please return the _id to its original value.';
-export const UNAVAILABLE_DESC = 'This descriptor is currently unavailable';
+export const INVALID_TOKEN = 'Valid `requestToken` property required in parameter per request when in the server'
+export const NO_REQUEST_MUTATION = 'Request Token _id does not match found context. Please return the _id to its original value';
 export const VACATED_DESC = 'Non EagleEyeContext value found at supplied context instance descriptor';
 
 export function allDescriptorsIn( requestToken? : RequestToken ) {

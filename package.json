@@ -134,5 +134,5 @@
 	"svelte": "./dist/index.js",
 	"type": "module",
 	"types": "./dist/index.d.ts",
-	"version": "1.0.0-alpha.11"
+	"version": "1.0.0-alpha.12"
 }

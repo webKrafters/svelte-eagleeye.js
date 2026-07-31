@@ -110,9 +110,6 @@ export {
     create as createEagleEye,
     DESC_EXISTS,
     discard as discardEagleEye,
-    NO_DESC_ENTRY,
-    NO_EMPTY_DESC,
-    UNAVAILABLE_DESC,
     use as useEagleEye,
     VACATED_DESC,
 } from './main/index.ts';
