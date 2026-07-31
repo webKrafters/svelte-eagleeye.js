@@ -42,8 +42,7 @@ export const NO_REQUEST_MUTATION = 'Request Token _id does not match found conte
 export const VACATED_DESC = 'Non EagleEyeContext value found at supplied context instance descriptor';
 
 export function allDescriptorsIn( requestToken? : RequestToken ) {
-	const group = getRequestGroup( requestToken );
-	return !!group ? Object.keys( group ) : [];
+	return Object.keys( getRequestGroup( requestToken )?.entries ?? {} );
 }
 
 function assertToken( rToken? : RequestToken ) {
