@@ -2,7 +2,7 @@
 import type {
 	AutoImmutable,
 	ContextInfo,
-	Descriptor,
+	Identifier,
 	IStorage,
 	ISvelteEagleEye,
 	Prehooks,
@@ -44,6 +44,11 @@ export const NO_REQUEST_MUTATION = 'Request Token _id does not match found conte
 export const UNAVAILABLE_DESC = 'This descriptor is currently unavailable';
 export const VACATED_DESC = 'Non EagleEyeContext value found at supplied context instance descriptor';
 
+export function allDescriptorsIn( requestToken? : RequestToken ) {
+	const group = getRequestGroup( requestToken );
+	return !!group ? Object.keys( group ) : [];
+}
+
 function assertToken( rToken? : RequestToken ) {
 	if( typeof rToken === 'undefined' ) {
 		if( browser ) { return }
@@ -55,14 +60,14 @@ function assertToken( rToken? : RequestToken ) {
 
 export function create<T extends State>( props : Props<T> ) : ContextInfo<T> {
 	setContext( props );
-	const descriptor = { CTX_DESC: props.CTX_DESC } as Descriptor;
+	const identifier = { CTX_DESC: props.CTX_DESC } as Identifier;
 	if( 'requestToken' in props ) {
-		descriptor.requestToken = props.requestToken;
+		identifier.requestToken = props.requestToken;
 	}
-	return { descriptor, value: use( props ) as SvelteEagleEye<T> };
+	return { identifier, value: use( props ) as SvelteEagleEye<T> };
 }
 
-export function discard({ CTX_DESC, requestToken } : Descriptor ) {
+export function discard({ CTX_DESC, requestToken } : Identifier ) {
 	const group = getRequestGroup( requestToken );
 	if( !group ) { return }
 	const entry = group.entries[ CTX_DESC ];4
@@ -144,6 +149,6 @@ function setContext<T extends State>({
 	throw new Error( `${ DESC_EXISTS }. Received descriptor: \`${ CTX_DESC }\`${ atToken }. May invoke \`use( '${ CTX_DESC }'${ callAtToken } )\` to obtain it.` );
 }
 
-export function use({ CTX_DESC, requestToken } : Descriptor ) {
+export function use({ CTX_DESC, requestToken } : Identifier ) {
 	return getRequestGroup( requestToken )?.entries?.[ CTX_DESC ]?.value ?? null
 }
