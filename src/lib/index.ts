@@ -106,7 +106,7 @@ export interface ContextInfo<T extends State> {
 } 
 
 export {
-    allDescriptorsIn,
+    allKeysIn,
     create as createEagleEye,
     DESC_EXISTS,
     discard as discardEagleEye,

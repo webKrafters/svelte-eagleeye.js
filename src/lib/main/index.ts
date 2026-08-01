@@ -44,7 +44,7 @@ export const INVALID_TOKEN = 'Valid `requestToken` property required in paramete
 export const NO_REQUEST_MUTATION = 'Request Token _id does not match found context. Please return the _id to its original value';
 export const VACATED_DESC = 'Non EagleEyeContext value found at supplied context instance key';
 
-export function allDescriptorsIn( requestToken? : RequestToken ) {
+export function allKeysIn( requestToken? : RequestToken ) {
 	return Object.keys( getRequestGroup( requestToken )?.entries ?? {} );
 }
 
@@ -69,7 +69,7 @@ export function create<T extends State>( props : Props<T> ) : ContextInfo<T> {
 export function discard({ key, requestToken } : Identifier ) {
 	const group = getRequestGroup( requestToken );
 	if( !group ) { return }
-	const entry = group.entries[ key ];4
+	const entry = group.entries[ key ];
 	if( !entry.value ) { return }
 	entry.value.dispose();
 	entry.value = null;
