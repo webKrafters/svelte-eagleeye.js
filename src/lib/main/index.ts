@@ -69,7 +69,7 @@ export function create<T extends State>( props : Props<T> ) : ContextInfo<T> {
 export function discard({ key, requestToken } : Identifier ) {
 	const group = getRequestGroup( requestToken );
 	if( !group ) { return }
-	const entry = group.entries[ key ];4
+	const entry = group.entries[ key ];
 	if( !entry.value ) { return }
 	entry.value.dispose();
 	entry.value = null;
