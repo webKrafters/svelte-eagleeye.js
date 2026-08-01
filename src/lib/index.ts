@@ -92,7 +92,7 @@ export interface RequestToken {
 };
 
 export interface Identifier {
-    CTX_DESC : string;
+    key : string;
     requestToken? : RequestToken; // holds an arbitrary unique string id assigned by a server application to an incoming request.
 }
 

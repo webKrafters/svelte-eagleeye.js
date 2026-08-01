@@ -7,6 +7,8 @@ import type {
 	ISvelteEagleEye,
 	Prehooks,
 	Props,
+	ProviderProps,
+	RawProviderProps,
 	RequestToken,
 	State
 } from '../index.ts';
@@ -31,15 +33,16 @@ import {
 	BrowserSvelteEagleEye,
 	MemorySvelteEagleEye
 } from '../index.ts';
+import { getContext, setContext } from 'svelte';
 
 const defaultRequestToken : RequestToken = { _id: crypto.randomUUID() };
 
 const eagleEyeMap = new WeakMap<RequestToken, RequestGroup>();
 
-export const DESC_EXISTS = 'An EagleEyeContext instance already uses this descriptor';
+export const DESC_EXISTS = 'An EagleEyeContext instance already uses this key';
 export const INVALID_TOKEN = 'Valid `requestToken` property required in parameter per request when in the server'
 export const NO_REQUEST_MUTATION = 'Request Token _id does not match found context. Please return the _id to its original value';
-export const VACATED_DESC = 'Non EagleEyeContext value found at supplied context instance descriptor';
+export const VACATED_DESC = 'Non EagleEyeContext value found at supplied context instance key';
 
 export function allDescriptorsIn( requestToken? : RequestToken ) {
 	return Object.keys( getRequestGroup( requestToken )?.entries ?? {} );
@@ -55,18 +58,18 @@ function assertToken( rToken? : RequestToken ) {
 }
 
 export function create<T extends State>( props : Props<T> ) : ContextInfo<T> {
-	setContext( props );
-	const identifier = { CTX_DESC: props.CTX_DESC } as Identifier;
+	setUniversalContext( props );
+	const identifier = { key: props.key } as Identifier;
 	if( 'requestToken' in props ) {
 		identifier.requestToken = props.requestToken;
 	}
 	return { identifier, value: use( props ) as SvelteEagleEye<T> };
 }
 
-export function discard({ CTX_DESC, requestToken } : Identifier ) {
+export function discard({ key, requestToken } : Identifier ) {
 	const group = getRequestGroup( requestToken );
 	if( !group ) { return }
-	const entry = group.entries[ CTX_DESC ];4
+	const entry = group.entries[ key ];4
 	if( !entry.value ) { return }
 	entry.value.dispose();
 	entry.value = null;
@@ -104,8 +107,8 @@ function isomorphize<T extends State>(
 		: new MemorySvelteEagleEye( ctxDescriptor, value as T, prehooks, storage );
 }
 
-function setContext<T extends State>({
-	CTX_DESC = '',
+function setUniversalContext<T extends State>({
+	key = '',
 	requestToken,
 	...props
 } : Props<T> ) : void {
@@ -118,12 +121,12 @@ function setContext<T extends State>({
 		};
 		eagleEyeMap.set( rToken, group );
 	}
-	let entry = group.entries[ CTX_DESC ];
+	let entry = group.entries[ key ];
 	if( !entry ) {
-		group.entries[ CTX_DESC ] = {
-			hash: hash({ CTX_DESC, ...props }),
+		group.entries[ key ] = {
+			hash: hash({ key, ...props }),
 			value: isomorphize<any>(
-				CTX_DESC,
+				key,
 				props.value,
 				props.prehooks,
 				props.storage
@@ -133,18 +136,18 @@ function setContext<T extends State>({
 	}
 	if( !entry.value ) {
 		let atToken = !requestToken ? '' : `  at appInstance: \`${ requestToken }\``;
-		throw new Error( `${ VACATED_DESC }. Received descriptor: \`${ CTX_DESC }\`${ atToken }.` );
+		throw new Error( `${ VACATED_DESC }. Received key: \`${ key }\`${ atToken }.` );
 	}
-	if( entry.hash === hash({ CTX_DESC, ...props }) ) { return }
+	if( entry.hash === hash({ key, ...props }) ) { return }
 	let atToken = '';
 	let callAtToken = '';
 	if( !!requestToken ) {
 		atToken = ` at request token: \`${ requestToken }\``;
 		callAtToken = `, '${ requestToken }'`;
 	}
-	throw new Error( `${ DESC_EXISTS }. Received descriptor: \`${ CTX_DESC }\`${ atToken }. May invoke \`use( '${ CTX_DESC }'${ callAtToken } )\` to obtain it.` );
+	throw new Error( `${ DESC_EXISTS }. Received key: \`${ key }\`${ atToken }. May invoke \`use( '${ key }'${ callAtToken } )\` to obtain it.` );
 }
 
-export function use({ CTX_DESC, requestToken } : Identifier ) {
-	return getRequestGroup( requestToken )?.entries?.[ CTX_DESC ]?.value ?? null
+export function use({ key, requestToken } : Identifier ) {
+	return getRequestGroup( requestToken )?.entries?.[ key ]?.value ?? null
 }
