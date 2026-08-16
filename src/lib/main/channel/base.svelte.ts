@@ -1,4 +1,11 @@
-import type { BaseStream, Changes, Data, SelectorMap, State, Store } from '../../index.ts';
+import type {
+	BaseStream,
+	Changes,
+	Data,
+	SelectorMap,
+	State,
+	Store
+} from '../../index.ts';
 
 import { BaseChannel } from '../../index.ts';
 

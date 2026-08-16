@@ -10,18 +10,18 @@ import { afterNavigate, beforeNavigate } from '$app/navigation';
 
 import { Channel } from '../base.svelte.ts';
 
-import { ChannelRegistry } from './registry/index.ts';
+import type { MemoDetail } from './registry/index.ts';
 
 export class BrowserChannel<
 	T extends State, 
 	const S extends SelectorMap
 > extends Channel<T, S>{
 	private _memoDetail = {
-		group: undefined as unknown as string,
-		key: undefined as unknown as string,
-		owner: undefined as unknown as string,
-		registry: undefined as unknown as ChannelRegistry<T>
-	};
+		group: undefined,
+		key: undefined,
+		owner: undefined,
+		registry: undefined
+	} as unknown as MemoDetail<T>;
 	private _navigationDetected = false;
 	constructor( stream : BaseStream<T>, selectorMap? : S ) {
 		super( stream, selectorMap );
@@ -30,6 +30,7 @@ export class BrowserChannel<
 		const sync = this.synchronizer;
 		onMount(() => this.channel.addListener( 'data-changed', sync ));
 		onDestroy(() => {
+			/* v8 ignore next */
 			if( this._navigationDetected ) { return }
 			this.channel.removeListener( 'data-changed', sync );
 			this.channel.endStream();
@@ -41,8 +42,11 @@ export class BrowserChannel<
 	get memoDetail() { return this._memoDetail }
 	
 	set selectorMap( selectorMap : S ) {
+		this._memoDetail
+			.registry
+				.recalibrateChannel( this )
+					.against( selectorMap );
 		super.selectorMap = selectorMap;
-		this._memoDetail.registry.revalidateChannelEntryFor( this );
 	}
 	
 }
