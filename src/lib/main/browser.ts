@@ -29,16 +29,19 @@ export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 		) => {
 			const existingEntry = this
 				._sRegistry
-				.getChannelEntryAt( selectorMap );
+					.getChannelEntryFor( ownerDesc )
+						.at( selectorMap );
 			if( existingEntry ) {
-				existingEntry.owners.add( ownerDesc );
-				return existingEntry.channel.store as Store<T, S>;
+				return existingEntry.store as unknown as Store<T, S>;
 			}	
 			return this
 				._sRegistry
-				.registerStream( stream, ownerDesc )
-				.at( selectorMap )
-				.store as Store<T, S>;
+					.registerStream( stream )
+						.for( ownerDesc )
+							.at( selectorMap )
+								.store as unknown as Store<T, S>;
+
+			
 		};
 	}
 }

@@ -1,14 +1,16 @@
 import { page } from 'vitest/browser';
-import { describe, expect, it, vi } from 'vitest';
-import { render } from 'vitest-browser-svelte';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render } from 'vitest-browser-svelte';
+
 import { type Changes } from '../../../index.ts';
-import { type SourceData } from '../../../test-artifacts/data/create-state-obj.ts';
+
+import type { SourceData } from '../../../test-artifacts/data/create-state-obj.ts';
+import type { StoreMock } from '../../../test-artifacts/types.js';
 import MemoryChannelClient from '../../../test-artifacts/memory-client.svelte';
-import type { StoreMock } from '$lib/test-artifacts/types.js';
 
 describe( 'Memory Channel Streaming', () => {
+	afterEach(() => { cleanup() });
 	it( 'handles memory channel based streaming', async () => {
-
 		const resetState = vi.fn();
 		const setState = vi.fn();
 		const resetPayload = [
@@ -28,7 +30,7 @@ describe( 'Memory Channel Streaming', () => {
 				mock: setState,
 				payload: updatePayload
 			}
-		} as StoreMock );
+		} as StoreMock<SourceData> );
 
 		const testBtn = page.getByText( 'test me!' );
 		const resetBtn = page.getByText( 'reset me!')
@@ -42,5 +44,26 @@ describe( 'Memory Channel Streaming', () => {
 		expect( setState ).not.toHaveBeenCalled();
 		expect( resetState ).toHaveBeenCalledTimes( 1 );
 		expect( resetState ).toHaveBeenCalledWith( resetPayload );
+	});
+	it( 'performs cleanup and exits stream on removal', async () => {
+		const endStream = vi.fn();
+		const removeListener = vi.fn();
+
+		const { unmount } = await render( 
+			MemoryChannelClient, { endStream, removeListener } as StoreMock
+		);
+
+		expect( endStream ).not.toHaveBeenCalled();
+		expect( removeListener ).not.toHaveBeenCalled();
+		
+		await unmount();
+		
+
+		expect( endStream ).toHaveBeenCalled();
+		expect( removeListener ).toHaveBeenCalled();
+		
+
+		expect( removeListener.mock.calls[ 0 ][ 0 ] ).toBe( 'data-changed' );
+		
 	});
 });

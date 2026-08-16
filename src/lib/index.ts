@@ -22,7 +22,6 @@ export interface Store<
 }
 
 export type {
-    Immutable as AutoImmutable,
     BaseType,
     ClearCommand,
     KeyType,
@@ -104,6 +103,8 @@ export interface ContextInfo<T extends State> {
     identifier : Identifier;
     value : SvelteEagleEye<T>
 } 
+
+export { Immutable as AutoImmutable } from '@webkrafters/auto-immutable';
 
 export {
     allKeysIn,

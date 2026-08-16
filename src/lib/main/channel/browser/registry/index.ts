@@ -1,105 +1,166 @@
+export interface MemoDetail<T extends State> {
+	group : string;
+	key : string;
+	owner : string;
+	registry : ChannelRegistry<T>;
+}
+
+interface GcPayload extends MemoDetail<State> {
+	memo : MemoBuckets;
+}
+
+import { hash as toSha512 } from '../../../util.ts';
+
 import { BrowserChannel } from '../index.ts';
 
 import type { 
 	BaseStream,
 	SelectorMap,
 	State
-} from '../../../..';
+} from '../../../../index.ts';
 
-interface Memo<T extends State> {
-	channel: BrowserChannel<T, SelectorMap>;
-	owners: Set<string>;
-}
+export const CHANNEL_DUPLICATION = 'Detected an attempt to create duplicate channel to an existing stream';
 
-type Bucket<T extends State> = Record<string, Memo<T>>;
+/** {[ OWNER_DESC : string> ]: WeakRef<BrowserChannel>} */
+export type Cache = Record<string, WeakRef<BrowserChannel<State, SelectorMap>>>;
+
+/** {[ SELECTOR_MAP_AS_KEY : string> ]: Cache} */
+export type Bucket = Record<string, Cache>;
+
+/** {[ SELECTOR_MAP_META : string> ]: Bucket} */
+export type MemoBuckets = Record<string, Bucket>;
+
+const gcRegistry = new FinalizationRegistry( removeFromChannelRegistry );
 
 export class ChannelRegistry<T extends State> {
 	private static DELIM = ';';
 	private static DEFAULT = 'default';
-	private memoBuckets : Record<string, Bucket<T>> = {};
-	getChannelEntryAt<const S extends SelectorMap>( selectorMap? : S ) {
-		const strSelectorMap = JSON.stringify( selectorMap ) ?? ChannelRegistry.DEFAULT;
-		return this.memoBuckets[ this.deriveBucketKey( strSelectorMap ) ]
-			?.[ ChannelRegistry.hash( strSelectorMap ) ];
-	}
-	/** @param strSelectorMap - stringified selector map object */
-	registerStream(
-		stream : BaseStream<T>,
-		ownerDesc : string
-	) {
+	private _memoBuckets : MemoBuckets = {};
+	protected get memoBuckets() { return this._memoBuckets }
+	getChannelEntryFor( ownerDesc : string ) {
 		const me = this;
 		return {
 			at<const S extends SelectorMap>( selectorMap? : S ) {
-				const strSelectorMap = JSON.stringify( selectorMap ) ?? ChannelRegistry.DEFAULT;
-				const bucketKey = me.deriveBucketKey( strSelectorMap );
-				let bucket = me.memoBuckets[ bucketKey ];
-				if( !bucket ) {
-					bucket = {} as Bucket<T>;
-					me.memoBuckets[ bucketKey ] = bucket;
-				}
-				const hashCode = ChannelRegistry.hash( strSelectorMap );
-				if( !( hashCode in bucket ) ) {
-					const channel = new BrowserChannel<T, S>( stream, selectorMap! );
-					channel.memoDetail.registry = me;
-					channel.memoDetail.group = bucketKey;
-					channel.memoDetail.key = hashCode;
-					bucket[ hashCode ] = { channel, owners: new Set<string>() };
-				}
-				bucket[ hashCode ].owners.add( ownerDesc );
-				return bucket[ hashCode ].channel;
+				return me.getTheCacheFor( selectorMap )
+					?.[ ownerDesc ]
+					?.deref() as unknown as BrowserChannel<T, S>;
 			}
 		};
 	}
-	revalidateChannelEntryFor<const S extends SelectorMap>( channel : BrowserChannel<T, S> ) {
-		const strSelectorMap = JSON.stringify( channel.selectorMap );
-		const newHash = ChannelRegistry.hash( strSelectorMap );
-		if( channel.memoDetail.key === newHash ) { return }
-		this.unregisterChannel( channel );
-		const newBucketKey = this.deriveBucketKey( strSelectorMap );
-		if( !( newBucketKey in this.memoBuckets ) ) {
-			this.memoBuckets[ newBucketKey ] = {} as Bucket<T>;
-		}
-		if( !( newHash in this.memoBuckets[ newBucketKey ] ) ) {
-			channel.memoDetail.group = newBucketKey;
-			channel.memoDetail.key = newHash;
-			this.memoBuckets[ newBucketKey ][ newHash ] = {
-				channel, owners: new Set<string>()
+	getOwnersAt<const S extends SelectorMap>( selectorMap? : S ) {
+		return Object.keys( this.getTheCacheFor( selectorMap ) );
+	}
+	recalibrateChannel<const S extends SelectorMap>( channel : BrowserChannel<T, S> ) {
+		const me = this;
+		return {
+			against<const S extends SelectorMap>( target : S ) {
+				/* v8 ignore next */
+				const strSelectorMap = JSON.stringify( target ) ?? ChannelRegistry.DEFAULT;
+				const newHash = ChannelRegistry.hash( strSelectorMap );
+				if( channel.memoDetail.key === newHash ) { return }
+				const newBucketKey = me.deriveBucketKey( strSelectorMap );
+				const { owner: ownerDesc } = channel.memoDetail;
+				if( !!me._memoBuckets[ newBucketKey ]?.[ newHash ]?.[ ownerDesc ] ) {
+					throw new Error( `${ CHANNEL_DUPLICATION }. At client: \`${ ownerDesc }\`.` );
+				}
+				me.unregisterChannel( channel );
+				let bucket = me._memoBuckets[ newBucketKey ];
+				if( !bucket ) {
+					bucket = {} as Bucket;
+					me._memoBuckets[ newBucketKey ] = bucket;
+				}
+				let cache = bucket[ newHash ];
+				if( !cache ) {
+					cache = {} as Cache;
+					bucket[ newHash ] = cache;
+				}
+				cache[ ownerDesc ] = new WeakRef( channel ) as unknown as WeakRef<BrowserChannel<State, SelectorMap>>;
+				channel.memoDetail.group = newBucketKey;
+				channel.memoDetail.key = newHash;
+				gcRegistry.register( channel, {
+					...channel.memoDetail,
+					memo: me._memoBuckets
+				} as GcPayload, channel );
 			}
-		}
-		this.memoBuckets[ newBucketKey ][ newHash ].owners.add(
-			channel.memoDetail.owner
-		);
+		};
+	}
+	registerStream( stream : BaseStream<T> ) {
+		const me = this;
+		return {
+			for( ownerDesc : string ) {
+				return {
+					at<const S extends SelectorMap>( selectorMap? : S ) {
+						const strSelectorMap = JSON.stringify( selectorMap ) ?? ChannelRegistry.DEFAULT;
+						const bucketKey = me.deriveBucketKey( strSelectorMap );
+						let bucket = me._memoBuckets[ bucketKey ];
+						if( !bucket ) {
+							bucket = {} as Bucket;
+							me._memoBuckets[ bucketKey ] = bucket;
+						}
+						const hashCode = ChannelRegistry.hash( strSelectorMap );
+						let cache = bucket[ hashCode ];
+						if( !cache ) {
+							cache = {} as Cache;
+							bucket[ hashCode ] = cache;
+						}
+						if( ownerDesc in cache ) {
+							throw new Error( `${ CHANNEL_DUPLICATION }. At client: \`${ ownerDesc }\`.` );
+						}
+						const channel = new BrowserChannel<T, S>( stream, selectorMap! );
+						channel.memoDetail.group = bucketKey;
+						channel.memoDetail.key = hashCode;
+						channel.memoDetail.owner = ownerDesc;
+						channel.memoDetail.registry = me;
+						cache[ ownerDesc ] = new WeakRef( channel ) as unknown as WeakRef<BrowserChannel<State, SelectorMap>>;
+						gcRegistry.register( channel, {
+							...channel.memoDetail,
+							memo: me._memoBuckets
+						} as GcPayload, channel );
+						return channel;
+					}
+				}
+			}
+		};
 	}
 	unregisterChannel<const S extends SelectorMap>( channel : BrowserChannel<T, S> ) {
-		const { memoDetail } = channel;
-		const group = this.memoBuckets[ memoDetail.group ];
-		if( !group ) { return }
-		const entry = group[ memoDetail.key ];
-		if( entry.channel !== channel ) { return }
-		entry.owners.delete( channel.memoDetail.owner )
-		if( !entry.owners.size ) {
-			delete group[ memoDetail.key ];
-		}
-		if( Object.keys( group ).length ) { return }
-		delete this.memoBuckets[ memoDetail.group ]
+		removeFromChannelRegistry({
+			memo: this._memoBuckets,
+			...channel.memoDetail
+		} as GcPayload );
+		gcRegistry.unregister( channel );
 	}
-	/** @param strSelectorMap - stringified selector map object */
-	private deriveBucketKey( strSelectorMap : string = ChannelRegistry.DEFAULT ) {
+	/** @param strSelectorMap - stringified selector map object | ChannelRegistry.DEFAULT */
+	private deriveBucketKey( strSelectorMap : string ) {
 		const { length } = strSelectorMap;
-		switch( length ) {
-			case 0: return `${ ChannelRegistry.DELIM }${ ChannelRegistry.DELIM }0`;
-			case 1: return `${ strSelectorMap[ 0 ] }${ ChannelRegistry.DELIM }${ strSelectorMap[ 0 ] }${ ChannelRegistry.DELIM }1`;
-		}
 		return `${ strSelectorMap[ 0 ] }${ ChannelRegistry.DELIM }${ strSelectorMap[ length - 1 ] }${ ChannelRegistry.DELIM }${ length }`;
+	}
+	private getTheCacheFor<const S extends SelectorMap>( selectorMap? : S ) {
+		const strSelectorMap = JSON.stringify( selectorMap ) ?? ChannelRegistry.DEFAULT;
+		return this._memoBuckets[ this.deriveBucketKey( strSelectorMap ) ]
+			?.[ ChannelRegistry.hash( strSelectorMap ) ] ?? {};
 	}
 	private static hash<const S extends SelectorMap>( selectorMap? : S ) : string;
 	private static hash( selectorMap? : string /* stringified selectorMap */ ) : string;
 	private static hash( selectorMap = ChannelRegistry.DEFAULT ) : string {
-		const str = JSON.stringify( selectorMap );
-		let factor = 0;
-		for( let s = str.length; s--; ) {
-			factor += ( s + str.charCodeAt( s ) + 1 ) 
-		}
-		return `${ factor }`;
+		return toSha512( selectorMap );
+	}
+}
+
+function removeFromChannelRegistry({ memo, ...detail } : GcPayload ) {
+	const nodes = [] as Array<{
+		key : string;
+		pNode : Record<string, any>;
+	}>;
+	let pNode = memo as Record<string, any>;
+	for( const key of [ detail.group, detail.key, detail.owner ] ) {
+		/* v8 ignore next */
+		if( !( key in pNode ) ) { break }
+		nodes.push({ key, pNode });
+		pNode = pNode[ key ];
+	}
+	while( nodes.length ) {
+		const { key, pNode } = nodes.pop()!;
+		delete pNode[ key ];
+		if( Object.keys( pNode ).length ) { return }
 	}
 }
