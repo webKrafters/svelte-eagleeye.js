@@ -14,6 +14,9 @@ export interface Registrar {
 
 class DerivedChannelRegistry extends ChannelRegistry<SourceData> {
 	get buckets() { return this.memoBuckets }
+	getNumReferencesOf<const S extends SelectorMap>( channel: BrowserChannel<SourceData, S> ) {
+		return super.getNumReferencesOf( channel );
+	}
 }
 
 export class TestRegistrar {
@@ -42,6 +45,9 @@ export class TestRegistrar {
 	getSelectorMapUsers<S extends SelectorMap>( selectorMap?: S ) {
 		return TestRegistrar.channelRegistry.getOwnersAt( selectorMap );
 	}
+	getNumReferencesOf<S extends SelectorMap>( channel : BrowserChannel<SourceData, S> ) {
+		return TestRegistrar.channelRegistry.getNumReferencesOf( channel );
+	}
 	recalibrateChannel<S extends SelectorMap>(
 		channel : BrowserChannel<SourceData, S>,
 		referenceTarget? : S
@@ -51,7 +57,7 @@ export class TestRegistrar {
 	unregisterChannel<S extends SelectorMap>(
 		channel : BrowserChannel<SourceData, S>
 	) {
-		TestRegistrar.channelRegistry.unregisterChannel( channel );
+		TestRegistrar.channelRegistry.unregisterStreamerFrom( channel );
 	}
 	private static channelRegistry = new DerivedChannelRegistry;
 	private static noop = ()=>{};
@@ -136,7 +142,7 @@ describe( 'ChannelRegistry class', () => {
 			await render( Test, { registrar, selectorMap } );
 			registrar.getChannelEntryAt( selectorMap ).selectorMap = selectorMap;
 		} );
-		it( 'throws when recalibrating a channel to a selector map already subscribed', async () => {
+		it( 'shares current observer when recalibrating a channel to a selector map already subscribed', async () => {
 			const selectorMap = {
 				age: 'age',
 				fName: 'name.first',
@@ -149,10 +155,27 @@ describe( 'ChannelRegistry class', () => {
 				render( Test, { registrar: registrar2 } ),
 				render( Test, { registrar: registrar2, selectorMap } ),
 			]);
-			expect(() => {
-				registrar2.recalibrateChannel( registrar2.getChannelEntryAt(), selectorMap );
-			}).toThrow();
+			const monitoredChannel2_0 = registrar2.getChannelEntryAt();
+			const monitoredChannel2_1 = registrar2.getChannelEntryAt( selectorMap );
+			expect( registrar2.getNumReferencesOf( monitoredChannel2_0 ) ).toBe( 1 );
+			expect( registrar2.getNumReferencesOf( monitoredChannel2_1 ) ).toBe( 1 );
+			
+			registrar2.recalibrateChannel( registrar2.getChannelEntryAt(), selectorMap );
+
+			expect( registrar2.getChannelEntryAt() ).toBeUndefined();
+			expect( registrar2.getNumReferencesOf( monitoredChannel2_0 ) ).toBe( 2 );
+			expect( registrar2.getNumReferencesOf( monitoredChannel2_1 ) ).toBe( 2 );
+
+			const monitoredChannel1_0 = registrar.getChannelEntryAt();
+			expect( registrar.getChannelEntryAt( selectorMap ) ).toBeUndefined();
+			expect( registrar.getNumReferencesOf( monitoredChannel1_0 ) ).toBe( 1 );
+
 			registrar.recalibrateChannel( registrar.getChannelEntryAt(), selectorMap );
+
+			const monitoredChannel1_1 = registrar.getChannelEntryAt( selectorMap );
+			expect( registrar.getChannelEntryAt() ).toBeUndefined();
+			expect( registrar.getNumReferencesOf( monitoredChannel1_1 ) ).toBe( 1 );
+
 		} );
 	} );
 	describe( 'registerStream method', () => {

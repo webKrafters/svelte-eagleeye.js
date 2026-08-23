@@ -31,7 +31,6 @@ import {
 	BrowserSvelteEagleEye,
 	MemorySvelteEagleEye
 } from '../index.ts';
-import { emitWarning } from 'process';
 
 const defaultRequestToken : RequestToken = { _id: crypto.randomUUID() };
 
