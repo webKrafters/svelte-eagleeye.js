@@ -34,7 +34,7 @@ export class BrowserChannel<
 			if( this._navigationDetected ) { return }
 			this.channel.removeListener( 'data-changed', sync );
 			this.channel.endStream();
-			this._memoDetail.registry.unregisterChannel( this );
+			this._memoDetail.registry.unregisterStreamerFrom( this );
 		});
 		sync();
 	}

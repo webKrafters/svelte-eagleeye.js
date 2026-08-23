@@ -40,8 +40,6 @@ export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 						.for( ownerDesc )
 							.at( selectorMap )
 								.store as unknown as Store<T, S>;
-
-			
 		};
 	}
 }
