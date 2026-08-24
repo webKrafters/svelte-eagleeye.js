@@ -9,6 +9,7 @@
 	],
 	"dependencies": {
 		"@webkrafters/eagleeye": "^1.0.8",
+		"@webkrafters/eagleeye.channels.repository": "^1.0.0",
 		"js-sha512": "^0.9.0",
 		"safe-stable-stringify": "^2.5.0"
 	},

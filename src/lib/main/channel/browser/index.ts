@@ -1,3 +1,5 @@
+import type { MemoDetail } from '@webkrafters/eagleeye.channels.repository';
+
 import type { 
 	BaseStream,
 	SelectorMap,
@@ -9,8 +11,6 @@ import { onDestroy, onMount } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 
 import { Channel } from '../base.svelte.ts';
-
-import type { MemoDetail } from './registry/index.ts';
 
 export class BrowserChannel<
 	T extends State, 
@@ -28,6 +28,14 @@ export class BrowserChannel<
 		afterNavigate(() => { this._navigationDetected = false });
 		beforeNavigate(() => { this._navigationDetected = true });
 		const sync = this.synchronizer;
+
+		// @debug
+		console.log( 'what is this stream >>>>>> ', {
+			stream: stream.toString(),
+			selectorMap,
+			channel: this.channel
+		});
+
 		onMount(() => this.channel.addListener( 'data-changed', sync ));
 		onDestroy(() => {
 			/* v8 ignore next */

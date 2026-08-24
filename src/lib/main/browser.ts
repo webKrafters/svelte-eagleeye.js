@@ -1,8 +1,18 @@
-import type { AutoImmutable, IStorage, Prehooks, SelectorMap, State, Store } from '../index.ts';
+import {
+	ChannelRegistry,
+	type Channel
+} from '@webkrafters/eagleeye.channels.repository';
+
+import type {
+	AutoImmutable,
+	IStorage,
+	Prehooks,
+	SelectorMap,
+	State
+} from '../index.ts';
 
 import { SvelteEagleEye } from './base.ts';
 import { BrowserChannel } from './channel/browser/index.ts';
-import { ChannelRegistry } from './channel/browser/registry/index.ts';
 
 export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 	private _sRegistry : ChannelRegistry<T>;
