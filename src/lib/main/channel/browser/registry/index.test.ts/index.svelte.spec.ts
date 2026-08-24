@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ChannelRegistry } from '../index.ts';
+import { afterEach, describe, expect, it, test, vi } from 'vitest';
+import { ChannelRegistry, type ChannelFactory, type MakeChannel } from '../index.ts';
 import { BrowserChannel } from '../../index.ts'; 
 import type {
 	SourceData
@@ -9,11 +9,20 @@ import Test from './index.svelte';
 import { render } from 'vitest-browser-svelte';
 
 export interface Registrar {
-	at<const S extends SelectorMap>( selectorMap?: S | undefined ) : BrowserChannel<SourceData, S>
+	at<const S extends SelectorMap>( selectorMap?: S ) : BrowserChannel<SourceData, S>
 };
 
 class DerivedChannelRegistry extends ChannelRegistry<SourceData> {
+	static defaultChannelFactory = (( stream, selectorMap ) => new BrowserChannel( stream, selectorMap )) as MakeChannel<SourceData>;
+	constructor( factory? : MakeChannel<SourceData> );
+	constructor( factory? : ChannelFactory<SourceData> );
+	constructor( factory? : any )  {
+		super( factory ?? DerivedChannelRegistry.defaultChannelFactory )
+	}
 	get buckets() { return this.memoBuckets }
+	get channelFactory() { return super.channelFactory }
+	set channelFactory( factory : ChannelFactory ) { super.channelFactory = factory }
+	set makeChannel( make : MakeChannel ) { super.makeChannel = make }
 	getNumReferencesOf<const S extends SelectorMap>( channel: BrowserChannel<SourceData, S> ) {
 		return super.getNumReferencesOf( channel );
 	}
@@ -35,7 +44,9 @@ export class TestRegistrar {
 				removeListener: TestRegistrar.noop,
 				setState: TestRegistrar.noop
 			})) as unknown as BaseStream<SourceData> )
-			.for( this.owner ); // as Registrar;
+			.for( this.owner ) as ({
+				at<const S extends SelectorMap>(selectorMap? : S) : BrowserChannel<SourceData, S>
+			});
 	}
 	get graph() { return TestRegistrar.channelRegistry.buckets }
 	get register() { return this._register }
@@ -65,6 +76,53 @@ export class TestRegistrar {
 
 describe( 'ChannelRegistry class', () => {
 	afterEach(() => TestRegistrar.reset());
+	describe( 'channelFactory property', () => {
+		it( 'produces current channel factory', () => {
+			const channelMakerMock = vi.fn().mockReturnValue({ memoDetail: {} });
+			const factory = { make: channelMakerMock };
+			const registry = new DerivedChannelRegistry( factory ); 
+			expect( registry.channelFactory ).toBe( factory )
+			expect( channelMakerMock ).not.toHaveBeenCalled();
+			registry.registerStream({} as BaseStream<SourceData>).for( expect.any( String ) ).at();
+			expect( channelMakerMock ).toHaveBeenCalled();
+		} );
+		test( 'function type factories are converted to instance form', () => {
+			const channelMakerMock = vi.fn().mockReturnValue({ memoDetail: {} });
+			const registry = new DerivedChannelRegistry( channelMakerMock ); 
+			expect( registry.channelFactory ).toEqual(
+				expect.objectContaining({ make: channelMakerMock })
+			);
+			expect( channelMakerMock ).not.toHaveBeenCalled();
+			registry.registerStream({} as BaseStream<SourceData>).for( expect.any( String ) ).at();
+			expect( channelMakerMock ).toHaveBeenCalled();
+		} );
+		it( 'can change current channel factory', () => {
+			const channelMakerMock_0 = vi.fn().mockReturnValue({ memoDetail: {} });
+			const registry = new DerivedChannelRegistry({ make: channelMakerMock_0 }); 
+			expect( channelMakerMock_0 ).toHaveBeenCalledTimes( 0 );
+			registry.registerStream({} as BaseStream<SourceData>).for( expect.any( String ) ).at();
+			expect( channelMakerMock_0 ).toHaveBeenCalledTimes( 1 );
+			channelMakerMock_0.mockClear();
+
+			// setting with a factory object
+			const channelMakerMock_1 = vi.fn().mockReturnValue({ memoDetail: {} });
+			registry.channelFactory = { make: channelMakerMock_1 };
+			expect( channelMakerMock_1 ).toHaveBeenCalledTimes( 0 );
+			registry.registerStream({} as BaseStream<SourceData>).for( expect.any( String ) ).at({ company: 'company' });
+			expect( channelMakerMock_0 ).toHaveBeenCalledTimes( 0 ); // defunct
+			expect( channelMakerMock_1 ).toHaveBeenCalledTimes( 1 );
+			channelMakerMock_1.mockClear();
+
+			// setting with a factory function
+			const channelMakerMock_2 = vi.fn().mockReturnValue({ memoDetail: {} });
+			registry.makeChannel = channelMakerMock_2;
+			expect( channelMakerMock_2 ).toHaveBeenCalledTimes( 0 );
+			registry.registerStream({} as BaseStream<SourceData>).for( expect.any( String ) ).at({ age: 'age' });
+			expect( channelMakerMock_0 ).toHaveBeenCalledTimes( 0 ); // defunct
+			expect( channelMakerMock_1 ).toHaveBeenCalledTimes( 0 ); // defunct
+			expect( channelMakerMock_2 ).toHaveBeenCalledTimes( 1 );
+		} );
+	} );
 	describe( 'memoBucket property', () => {
 		it( 'produces the underlying storage data structure from derived implementation', () => {
 			const recalibrateChannelSpy = vi.spyOn( DerivedChannelRegistry.prototype, 'buckets', 'get' );
@@ -110,7 +168,7 @@ describe( 'ChannelRegistry class', () => {
 				render( Test, { registrar } ),
 				render( Test, { registrar: registrar2 } )
 			]);
-			const channel = registrar.getChannelEntryAt();
+			const channel = registrar.getChannelEntryAt() as BrowserChannel<SourceData, SelectorMap>;
 			expect( registrar.getSelectorMapUsers() ).toEqual([ 'TEST_OWNER1', 'TEST_OWNER2' ]);
 			const selectorMap = {
 				age: 'age',
@@ -139,8 +197,14 @@ describe( 'ChannelRegistry class', () => {
 				location: 'history.places[0]'
 			};
 			const registrar = new TestRegistrar( 'TEST_OWNER1' );
+			expect( registrar.getChannelEntryAt( selectorMap ) ).toBeUndefined();
 			await render( Test, { registrar, selectorMap } );
-			registrar.getChannelEntryAt( selectorMap ).selectorMap = selectorMap;
+			const c = registrar.getChannelEntryAt( selectorMap ) as BrowserChannel<SourceData, SelectorMap>;
+			expect( c ).toBeDefined();
+			const t = registrar.getNumReferencesOf( c );
+			expect( t ).toBe( 1 );
+			c.selectorMap = selectorMap;
+			expect( registrar.getNumReferencesOf( c ) ).toBe( t );
 		} );
 		it( 'shares current observer when recalibrating a channel to a selector map already subscribed', async () => {
 			const selectorMap = {
@@ -155,24 +219,30 @@ describe( 'ChannelRegistry class', () => {
 				render( Test, { registrar: registrar2 } ),
 				render( Test, { registrar: registrar2, selectorMap } ),
 			]);
-			const monitoredChannel2_0 = registrar2.getChannelEntryAt();
-			const monitoredChannel2_1 = registrar2.getChannelEntryAt( selectorMap );
+			const monitoredChannel2_0 = registrar2.getChannelEntryAt() as BrowserChannel<SourceData, SelectorMap>;
+			const monitoredChannel2_1 = registrar2.getChannelEntryAt( selectorMap ) as BrowserChannel<SourceData, SelectorMap>;
 			expect( registrar2.getNumReferencesOf( monitoredChannel2_0 ) ).toBe( 1 );
 			expect( registrar2.getNumReferencesOf( monitoredChannel2_1 ) ).toBe( 1 );
 			
-			registrar2.recalibrateChannel( registrar2.getChannelEntryAt(), selectorMap );
+			registrar2.recalibrateChannel(
+				registrar2.getChannelEntryAt() as BrowserChannel<SourceData, SelectorMap>,
+				selectorMap
+			);
 
 			expect( registrar2.getChannelEntryAt() ).toBeUndefined();
 			expect( registrar2.getNumReferencesOf( monitoredChannel2_0 ) ).toBe( 2 );
 			expect( registrar2.getNumReferencesOf( monitoredChannel2_1 ) ).toBe( 2 );
 
-			const monitoredChannel1_0 = registrar.getChannelEntryAt();
+			const monitoredChannel1_0 = registrar.getChannelEntryAt() as BrowserChannel<SourceData, SelectorMap>;
 			expect( registrar.getChannelEntryAt( selectorMap ) ).toBeUndefined();
 			expect( registrar.getNumReferencesOf( monitoredChannel1_0 ) ).toBe( 1 );
 
-			registrar.recalibrateChannel( registrar.getChannelEntryAt(), selectorMap );
+			registrar.recalibrateChannel(
+				registrar.getChannelEntryAt() as BrowserChannel<SourceData, SelectorMap>,
+				selectorMap
+			);
 
-			const monitoredChannel1_1 = registrar.getChannelEntryAt( selectorMap );
+			const monitoredChannel1_1 = registrar.getChannelEntryAt( selectorMap ) as BrowserChannel<SourceData, SelectorMap>;
 			expect( registrar.getChannelEntryAt() ).toBeUndefined();
 			expect( registrar.getNumReferencesOf( monitoredChannel1_1 ) ).toBe( 1 );
 

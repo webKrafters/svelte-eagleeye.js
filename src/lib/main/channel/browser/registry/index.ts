@@ -1,17 +1,39 @@
-export interface MemoDetail<T extends State> {
+export interface Channel<T extends State = any> {
+	get memoDetail() : MemoDetail<T>
+}
+
+export interface MemoDetail<T extends State = any> {
 	group : string;
 	key : string;
 	owner : string;
 	registry : ChannelRegistry<T>;
 }
 
-interface GcPayload<T extends State> extends MemoDetail<T> {
+interface GcPayload<T extends State = any> extends MemoDetail<T> {
 	memo : MemoBuckets;
 }
 
-import { hash as toSha512 } from '../../../util.ts';
+export interface CacheEntry<T extends State = any> {
+	numRefs : number;
+	value : WeakRef<Channel<T>>
+}
 
-import { BrowserChannel } from '../index.ts';
+/** {[ OWNER_DESC : string ]: CacheEntry} */
+export type Cache<T extends State = any> = Record<string, CacheEntry<T>>;
+
+/** {[ SELECTOR_MAP_AS_KEY : string ]: Cache} */
+export type Bucket<T extends State = any> = Record<string, Cache<T>>;
+
+/** {[ SELECTOR_MAP_META : string ]: Bucket} */
+export type MemoBuckets<T extends State = any> = Record<string, Bucket<T>>;
+
+export interface ChannelFactory<T extends State = any> {
+	make<const S extends SelectorMap = any>( stream : BaseStream<T>, selectorMap : S ) : Channel<T>;
+}
+
+export type MakeChannel<T extends State = any> = ChannelFactory<T>[ "make" ];
+
+import { hash as toSha512 } from '../../../util.ts';
 
 import type { 
 	BaseStream,
@@ -19,27 +41,32 @@ import type {
 	State
 } from '../../../../index.ts';
 
-export interface CacheEntry {
-	numRefs : number;
-	value : WeakRef<BrowserChannel<State, SelectorMap>>
-}
-
-/** {[ OWNER_DESC : string ]: CacheEntry} */
-export type Cache = Record<string, CacheEntry>;
-
-/** {[ SELECTOR_MAP_AS_KEY : string ]: Cache} */
-export type Bucket = Record<string, Cache>;
-
-/** {[ SELECTOR_MAP_META : string ]: Bucket} */
-export type MemoBuckets = Record<string, Bucket>;
-
 const gcRegistry = new FinalizationRegistry<GcPayload<any>>( removeFromChannelRegistry );
 
-export class ChannelRegistry<T extends State> {
+export class ChannelRegistry<T extends State = any> {
 	private static DELIM = ';';
 	private static DEFAULT = 'default';
-	private _memoBuckets : MemoBuckets = {};
+	private _channelFactory : ChannelFactory<T>;
+	private _memoBuckets : MemoBuckets<T> = {};
+
+	constructor( channelFactory : MakeChannel<T> );
+	constructor( channelFactory : ChannelFactory<T> );
+	constructor( channelFactory : any ) {
+		this._channelFactory = typeof channelFactory === 'function'
+			? createBasicChannelFactoryOf( channelFactory )
+			: channelFactory;
+	}
+
+	protected get channelFactory() { return this._channelFactory }
 	protected get memoBuckets() { return this._memoBuckets }
+
+	protected set channelFactory( channelFactory : ChannelFactory<T> ) {
+		this._channelFactory = channelFactory;
+	}
+	protected set makeChannel( makeFn : MakeChannel<T> ) {
+		this._channelFactory = createBasicChannelFactoryOf( makeFn );
+	}
+
 	getChannelEntryFor( ownerDesc : string ) {
 		const me = this;
 		return {
@@ -47,14 +74,14 @@ export class ChannelRegistry<T extends State> {
 				return me.getTheCacheFor( selectorMap )
 					?.[ ownerDesc ]
 					?.value
-					?.deref() as unknown as BrowserChannel<T, S>;
+					?.deref();
 			}
 		};
 	}
 	getOwnersAt<const S extends SelectorMap>( selectorMap? : S ) {
 		return Object.keys( this.getTheCacheFor( selectorMap ) );
 	}
-	recalibrateChannel<const S extends SelectorMap>( channel : BrowserChannel<T, S> ) {
+	recalibrateChannel( channel : Channel<T> ) {
 		const me = this;
 		return {
 			against<const S extends SelectorMap>( target : S ) {
@@ -105,20 +132,20 @@ export class ChannelRegistry<T extends State> {
 						const bucketKey = me.deriveBucketKey( strSelectorMap );
 						let bucket = me._memoBuckets[ bucketKey ];
 						if( !bucket ) {
-							bucket = {} as Bucket;
+							bucket = {} as Bucket<T>;
 							me._memoBuckets[ bucketKey ] = bucket;
 						}
 						const hashCode = ChannelRegistry.hash( strSelectorMap );
 						let cache = bucket[ hashCode ];
 						if( !cache ) {
-							cache = {} as Cache;
+							cache = {} as Cache<T>;
 							bucket[ hashCode ] = cache;
 						}
 						if( ownerDesc in cache ) {
 							cache[ ownerDesc ].numRefs++;
-							return cache[ ownerDesc ].value.deref() as unknown as BrowserChannel<T, S>;
+							return cache[ ownerDesc ].value.deref();
 						}
-						const channel = new BrowserChannel<T, S>( stream, selectorMap! );
+						const channel = me._channelFactory.make( stream, selectorMap );
 						channel.memoDetail.group = bucketKey;
 						channel.memoDetail.key = hashCode;
 						channel.memoDetail.owner = ownerDesc;
@@ -135,7 +162,7 @@ export class ChannelRegistry<T extends State> {
 			}
 		};
 	}
-	unregisterStreamerFrom<const S extends SelectorMap>( channel : BrowserChannel<T, S> ) {
+	unregisterStreamerFrom( channel : Channel<T> ) {
 		const { group, key, owner } = channel.memoDetail;
 		const entry = this._memoBuckets[ group ]?.[ key ]?.[ owner ];
 		!!entry && --entry.numRefs < 1 && this.discardChannel( channel );
@@ -144,13 +171,13 @@ export class ChannelRegistry<T extends State> {
 	private deriveBucketKey( strSelectorMap : string ) {
 		return `${ strSelectorMap[ 0 ] }${ ChannelRegistry.DELIM }${ strSelectorMap.at( -1 ) }${ ChannelRegistry.DELIM }${ strSelectorMap.length }`;
 	}
-	private discardChannel<const S extends SelectorMap>( channel : BrowserChannel<T, S> ) {
+	private discardChannel( channel : Channel<T> ) {
 		removeFromChannelRegistry({ memo: this._memoBuckets, ...channel.memoDetail });
 		gcRegistry.unregister( channel );
 	}
-	protected getNumReferencesOf<const S extends SelectorMap>(
-		{ memoDetail: { group, key, owner } } : BrowserChannel<T, S>
-	) {
+	protected getNumReferencesOf( {
+		memoDetail: { group, key, owner }
+	} : Channel<T> ) {
 		/* v8 ignore next */
 		return this._memoBuckets[ group ]?.[ key ]?.[ owner ]?.numRefs ?? 0
 	}
@@ -166,10 +193,13 @@ export class ChannelRegistry<T extends State> {
 	}
 }
 
-function createEntryFor<T extends State, S extends SelectorMap>( channel : BrowserChannel<T, S> ) {
+
+function createBasicChannelFactoryOf<T extends State>( make : MakeChannel<T> ) { return { make } }
+
+function createEntryFor<T extends State>( channel : Channel<T> ) {
 	return {
 		numRefs: 0,
-		value: new WeakRef( channel ) as unknown as WeakRef<BrowserChannel<State, SelectorMap>>
+		value: new WeakRef( channel )
 	};
 }
 

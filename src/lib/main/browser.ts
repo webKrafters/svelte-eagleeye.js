@@ -1,6 +1,7 @@
 import type { AutoImmutable, IStorage, Prehooks, SelectorMap, State, Store } from '../index.ts';
 
 import { SvelteEagleEye } from './base.ts';
+import { BrowserChannel } from './channel/browser/index.ts';
 import { ChannelRegistry } from './channel/browser/registry/index.ts';
 
 export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
@@ -19,7 +20,9 @@ export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 	);
 	constructor( name : string, value? : any, prehooks? : any, storage? : any ) {
 		super( name, value, prehooks, storage );
-		this._sRegistry = new ChannelRegistry<T>();
+		this._sRegistry = new ChannelRegistry<T>(
+			( stream, selectorMap ) => new BrowserChannel( stream, selectorMap )
+		);
 	}
 	get stream() {
 		const stream = this.baseStream;
@@ -27,19 +30,17 @@ export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 			ownerDesc : string,
 			selectorMap? : S
 		) => {
-			const existingEntry = this
+			let channel = this
 				._sRegistry
 					.getChannelEntryFor( ownerDesc )
-						.at( selectorMap );
-			if( existingEntry ) {
-				return existingEntry.store as unknown as Store<T, S>;
-			}	
-			return this
+						.at( selectorMap ) as BrowserChannel<T, S>;
+			if( channel ) { return channel.store }	
+			channel = this
 				._sRegistry
 					.registerStream( stream )
 						.for( ownerDesc )
-							.at( selectorMap )
-								.store as unknown as Store<T, S>;
+							.at( selectorMap ) as BrowserChannel<T, S>;
+			return channel.store;
 		};
 	}
 }
