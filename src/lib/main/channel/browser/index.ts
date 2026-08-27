@@ -1,3 +1,5 @@
+import type { MemoDetail } from '@webkrafters/eagleeye.channels.repository';
+
 import type { 
 	BaseStream,
 	SelectorMap,
@@ -9,8 +11,6 @@ import { onDestroy, onMount } from 'svelte';
 import { afterNavigate, beforeNavigate } from '$app/navigation';
 
 import { Channel } from '../base.svelte.ts';
-
-import type { MemoDetail } from './registry/index.ts';
 
 export class BrowserChannel<
 	T extends State, 

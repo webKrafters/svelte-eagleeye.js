@@ -1,8 +1,18 @@
-import type { AutoImmutable, IStorage, Prehooks, SelectorMap, State, Store } from '../index.ts';
+import {
+	ChannelRegistry,
+	type Channel
+} from '@webkrafters/eagleeye.channels.repository';
+
+import type {
+	AutoImmutable,
+	IStorage,
+	Prehooks,
+	SelectorMap,
+	State
+} from '../index.ts';
 
 import { SvelteEagleEye } from './base.ts';
 import { BrowserChannel } from './channel/browser/index.ts';
-import { ChannelRegistry } from './channel/browser/registry/index.ts';
 
 export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 	private _sRegistry : ChannelRegistry<T>;
@@ -32,14 +42,14 @@ export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 		) => {
 			let channel = this
 				._sRegistry
-					.getChannelEntryFor( ownerDesc )
-						.at( selectorMap ) as BrowserChannel<T, S>;
-			if( channel ) { return channel.store }	
+				.getChannelEntryFor( ownerDesc )
+				.at( selectorMap ) as BrowserChannel<T, S>;
+			if( channel ) { return channel.store }
 			channel = this
 				._sRegistry
-					.registerStream( stream )
-						.for( ownerDesc )
-							.at( selectorMap ) as BrowserChannel<T, S>;
+				.registerStream( stream )
+				.for( ownerDesc )
+				.at( selectorMap ) as BrowserChannel<T, S>;
 			return channel.store;
 		};
 	}
