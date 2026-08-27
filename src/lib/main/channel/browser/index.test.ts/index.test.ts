@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { BrowserChannel } from '../index.ts';
-
 import Test from './index.svelte';
 import { render } from 'vitest-browser-svelte';
 import type { SelectorMap } from '@webkrafters/eagleeye';
-
-
 
 describe( 'BrowserChannel', () => {
 	it( 'allows for switching selector map', () => {

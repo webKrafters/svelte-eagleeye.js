@@ -42,14 +42,14 @@ export class BrowserSvelteEagleEye<T extends State> extends SvelteEagleEye<T> {
 		) => {
 			let channel = this
 				._sRegistry
-					.getChannelEntryFor( ownerDesc )
-						.at( selectorMap ) as BrowserChannel<T, S>;
-			if( channel ) { return channel.store }	
+				.getChannelEntryFor( ownerDesc )
+				.at( selectorMap ) as BrowserChannel<T, S>;
+			if( channel ) { return channel.store }
 			channel = this
 				._sRegistry
-					.registerStream( stream )
-						.for( ownerDesc )
-							.at( selectorMap ) as BrowserChannel<T, S>;
+				.registerStream( stream )
+				.for( ownerDesc )
+				.at( selectorMap ) as BrowserChannel<T, S>;
 			return channel.store;
 		};
 	}

@@ -1,10 +1,10 @@
+<script lang="ts" module>
+	import { BrowserSvelteEagleEye } from '../../../../index.ts';
+	const ee = new BrowserSvelteEagleEye( 'TEST_CTX' );
+</script>
 <script lang="ts">
     import type { ObjectSelector, SelectorMap } from '@webkrafters/eagleeye';
-	import { BrowserChannel } from '../index.ts';
-    import { BrowserSvelteEagleEye, type BaseStream } from '../../../../index.ts';
-    import { untrack } from 'svelte';
-
-	const ee = new BrowserSvelteEagleEye( 'TEST_CTX' );
+	import { untrack } from 'svelte';
 
 	const props : {
 		ref : {
@@ -13,24 +13,16 @@
 		selectorMap : SelectorMap
 	} = $props();
 
-	const channel = new BrowserChannel(
-		ee.stream as BaseStream,
+	const stream = ee.stream(
+		'TEST_PRODUCT',
 		untrack(() => props.selectorMap )
 	);
 
-	// @debug
-	console.log( '>>>>>>>>>> are we here 2 ???????' );
-
-
-	(() => { props.ref.currentSelectorMap = channel.selectorMap })();
+	(() => { props.ref.currentSelectorMap = stream.selectorMap })();
 
 	$effect(() => {
-
-		// @debug
-		console.info( '>>>>>>>>>> are we here 2 ???????' );
-
-		channel.selectorMap = props.selectorMap as ObjectSelector;
-		props.ref.currentSelectorMap = channel.selectorMap;
+		stream.selectorMap = props.selectorMap as ObjectSelector;
+		props.ref.currentSelectorMap = stream.selectorMap;
 	});
 
 </script>

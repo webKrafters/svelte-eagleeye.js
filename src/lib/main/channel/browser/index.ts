@@ -28,14 +28,6 @@ export class BrowserChannel<
 		afterNavigate(() => { this._navigationDetected = false });
 		beforeNavigate(() => { this._navigationDetected = true });
 		const sync = this.synchronizer;
-
-		// @debug
-		console.log( 'what is this stream >>>>>> ', {
-			stream: stream.toString(),
-			selectorMap,
-			channel: this.channel
-		});
-
 		onMount(() => this.channel.addListener( 'data-changed', sync ));
 		onDestroy(() => {
 			/* v8 ignore next */
