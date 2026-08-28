@@ -32,9 +32,10 @@ export class BrowserChannel<
 		onDestroy(() => {
 			/* v8 ignore next */
 			if( this._navigationDetected ) { return }
-			this.channel.removeListener( 'data-changed', sync );
-			this.channel.endStream();
-			this._memoDetail.registry.unregisterStreamerFrom( this );
+			const pool = this._memoDetail.registry;
+			pool.unregisterStreamerFrom( this );
+			!pool.getChannelEntryFor( this._memoDetail.owner ).at( selectorMap )
+			&& this.channel.endStream();
 		});
 		sync();
 	}
