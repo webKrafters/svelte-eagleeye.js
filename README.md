@@ -13,7 +13,8 @@
 	</a>
 	<img alt="NPM" src="https://img.shields.io/npm/l/@webkrafters/svelte-eagleeye">
 	<img alt="Maintenance" src="https://img.shields.io/maintenance/yes/2032">
-	<img alt="build size" src="https://img.shields.io/bundlephobia/minzip/@webkrafters/svelte-eagleeye?label=bundle%20size">
+	<!-- <img alt="build size" src="https://img.shields.io/bundlephobia/minzip/@webkrafters/svelte-eagleeye?label=bundle%20size"> -->
+	<img src="https://badgen.net" alt="bundle size" />
 	<a href="https://www.npmjs.com/package/@webKrafters/svelte-eagleeye">
 		<img alt="Downloads" src="https://img.shields.io/npm/dt/@webkrafters/svelte-eagleeye.svg">
 	</a>
